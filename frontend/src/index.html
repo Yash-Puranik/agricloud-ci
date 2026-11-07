@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriCloud-CI | Microclimate Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="static/css/style.css">
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans">
+    <header class="bg-blue-900 text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="text-xl font-bold tracking-wide">AgriCloud-CI Platform</h1>
+            <nav class="space-x-6 text-sm font-medium">
+                <a href="index.html" class="text-blue-200 border-b-2 border-blue-400 pb-1">Dashboard</a>
+                <a href="advisory.html" class="hover:text-blue-200">Crop Advisory</a>
+                <a href="history.html" class="hover:text-blue-200">Audit History</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <div class="mb-6 flex justify-between items-end">
+            <div>
+                <h2 class="text-2xl font-bold text-slate-900">Live Field Microclimate Telemetry</h2>
+                <p class="text-sm text-slate-500">Node: <span id="node-id" class="font-mono font-semibold">ESP32-NODE-01</span> | Status: <span id="node-status" class="text-emerald-600 font-semibold">Connected</span></p>
+            </div>
+            <span id="last-updated" class="text-xs text-slate-400">Updated: Just now</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Ambient Temperature</p>
+                <div class="flex items-baseline mt-2">
+                    <span id="temp-val" class="text-4xl font-extrabold text-blue-900">--</span>
+                    <span class="text-xl font-semibold text-slate-500 ml-1">°C</span>
+                </div>
+                <p class="text-xs text-slate-400 mt-2">Nominal Range: 15°C – 35°C</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Relative Humidity</p>
+                <div class="flex items-baseline mt-2">
+                    <span id="humidity-val" class="text-4xl font-extrabold text-blue-900">--</span>
+                    <span class="text-xl font-semibold text-slate-500 ml-1">%</span>
+                </div>
+                <p class="text-xs text-slate-400 mt-2">Nominal Range: 40% – 80%</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Soil Moisture</p>
+                <div class="flex items-baseline mt-2">
+                    <span id="soil-val" class="text-4xl font-extrabold text-emerald-600">--</span>
+                    <span class="text-xl font-semibold text-slate-500 ml-1">%</span>
+                </div>
+                <p class="text-xs text-slate-400 mt-2">Capacitive Probe Saturation</p>
+            </div>
+        </div>
+
+        <div class="bg-blue-50 border-l-4 border-blue-600 p-4 rounded-r-lg shadow-sm">
+            <h3 class="font-bold text-blue-900 text-sm">Advisory Verdict: <span id="verdict-tag" class="ml-2 font-mono uppercase text-xs px-2 py-0.5 rounded bg-blue-200">Analyzing</span></h3>
+            <p id="quick-advisory" class="text-sm text-blue-800 mt-1">Awaiting real-time telemetry stream from edge sensor node...</p>
+        </div>
+    </main>
+
+    <script src="static/js/dashboard.js"></script>
+</body>
+</html>

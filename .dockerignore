@@ -1,0 +1,50 @@
+# Version control & CI configurations
+.git
+.gitignore
+.github
+
+# Python bytecode & cache
+**/__pycache__
+**/*.py[cod]
+**/*.pyo
+**/*.pyd
+
+# Virtual environments
+**/.venv
+**/venv
+**/env
+
+# Secrets & environment files
+**/.env
+**/.env.*
+**/*.pem
+**/*.key
+
+# Local databases, storage & runtime logs
+**/*.db
+**/*.sqlite3
+agricloud.db
+backend/agricloud.db
+**/*.log
+pgdata
+
+# Testing & coverage artifacts
+**/.pytest_cache
+**/.coverage
+**/htmlcov
+
+# Editor & OS metadata
+**/.vscode
+**/.idea
+**/.DS_Store
+**/Thumbs.db
+
+# Firmware source & build files (not needed inside web/backend containers)
+firmware/
+firmware/**
+
+# Documentation, markdown & raw reports
+**/*.md
+**/*.pdf
+docs/
+scripts/run_checks.sh

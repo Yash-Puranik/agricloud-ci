@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriCloud-CI | Crop Advisory</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="static/css/style.css">
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans">
+    <header class="bg-blue-900 text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="text-xl font-bold tracking-wide">AgriCloud-CI Platform</h1>
+            <nav class="space-x-6 text-sm font-medium">
+                <a href="index.html" class="hover:text-blue-200">Dashboard</a>
+                <a href="advisory.html" class="text-blue-200 border-b-2 border-blue-400 pb-1">Crop Advisory</a>
+                <a href="history.html" class="hover:text-blue-200">Audit History</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 py-8">
+        <h2 class="text-2xl font-bold text-slate-900 mb-6">Target Crop Viability Evaluation</h2>
+
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
+            <label class="block text-sm font-bold text-slate-700 mb-2">Select Crop Variety</label>
+            <select id="crop-select" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                <option value="Wheat">Wheat (Triticum aestivum)</option>
+                <option value="Cotton">Cotton (Gossypium hirsutum)</option>
+                <option value="Soybeans">Soybeans (Glycine max)</option>
+            </select>
+            <button id="evaluate-btn" class="mt-4 px-6 py-2.5 bg-blue-900 text-white font-semibold rounded-lg hover:bg-blue-800">
+                Evaluate Viability
+            </button>
+        </div>
+
+        <div id="result-box" class="hidden bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <div class="flex items-center justify-between mb-4">
+                <h3 id="res-crop" class="text-lg font-bold text-slate-900">Wheat</h3>
+                <span id="res-badge" class="px-3 py-1 rounded-full text-xs font-bold uppercase">Optimal</span>
+            </div>
+            <p id="res-advisory" class="text-sm text-slate-700 leading-relaxed"></p>
+            <ul id="res-violations" class="mt-4 space-y-1 text-xs text-red-600"></ul>
+        </div>
+    </main>
+
+    <script>
+        document.getElementById("evaluate-btn").addEventListener("click", async () => {
+            const crop = document.getElementById("crop-select").value;
+            try {
+                const res = await fetch("http://127.0.0.1:5000/api/telemetry", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({ temperature: 24.0, humidity: 60.0, soil_moisture: 55.0, crop: crop })
+                });
+                const data = await res.json();
+                document.getElementById("result-box").classList.remove("hidden");
+                document.getElementById("res-crop").innerText = data.crop;
+                document.getElementById("res-advisory").innerText = data.advisory;
+                const badge = document.getElementById("res-badge");
+                badge.innerText = data.verdict;
+                badge.className = "px-3 py-1 rounded-full text-xs font-bold uppercase " +
+                    (data.verdict === "Optimal" ? "bg-emerald-100 text-emerald-800" :
+                     data.verdict === "Marginal" ? "bg-amber-100 text-amber-800" : "bg-red-100 text-red-800");
+
+                const violList = document.getElementById("res-violations");
+                violList.innerHTML = "";
+                if (data.violations && data.violations.length > 0) {
+                    data.violations.forEach(v => {
+                        const li = document.createElement("li");
+                        li.innerText = "• " + v;
+                        violList.appendChild(li);
+                    });
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        });
+    </script>
+</body>
+</html>
