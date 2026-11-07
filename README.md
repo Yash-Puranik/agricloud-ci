@@ -4,7 +4,7 @@ An automated, edge-to-cloud precision agriculture monitoring and decision suppor
 
 The system features a decoupled microservice architecture, dual-tier persistence with automated SQLite failover for zero-downtime data logging, containerized deployment configurations, and automated continuous integration workflows.
 
-**Live Deployment:** <https://your-deployment-url.vercel.app>
+**Live Deployment:**
 
 ---
 
