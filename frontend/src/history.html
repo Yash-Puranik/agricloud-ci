@@ -40,41 +40,64 @@
             </table>
         </div>
     </main>
-
     <script>
         document.addEventListener("DOMContentLoaded", async () => {
             const tableBody = document.getElementById("history-rows");
-            try {
-                const res = await fetch("http://127.0.0.1:5000/api/history?limit=15");
-                const data = await res.json();
-                if (!data.records || data.records.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-400">No records found.</td></tr>';
+
+            async function renderHistory() {
+                let records = JSON.parse(localStorage.getItem("agricloud_history") || "[]");
+
+                try {
+                    const res = await fetch("http://127.0.0.1:5000/api/history?limit=15", { cache: "no-store" });
+                    if (res.ok) {
+                        const data = await res.json();
+                        const backendList = Array.isArray(data) ? data : (data.records || []);
+                        if (records.length === 0 && backendList.length > 0) {
+                            records = backendList;
+                        }
+                    }
+                } catch (e) {
+                    if (records.length === 0) {
+                        tableBody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-red-500">Failed to connect to history endpoint (Ensure Flask is running on :5000).</td></tr>';
+                        return;
+                    }
+                }
+
+                if (records.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-400">No records found. Open Dashboard first to stream telemetry.</td></tr>';
                     return;
                 }
+
                 tableBody.innerHTML = "";
-                data.records.forEach(r => {
+                records.slice(0, 15).forEach(r => {
+                    const verdict = r.verdict || r.suitability_verdict || (Number(r.soil_moisture) < 45 ? "Critical" : Number(r.soil_moisture) > 65 ? "Marginal" : "Optimal");
+                    const cropName = r.crop || r.crop_queried || "Wheat";
+                    const nodeId = r.node_id || "ESP32-NODE-01";
+
                     const tr = document.createElement("tr");
                     tr.className = "hover:bg-slate-50";
                     tr.innerHTML = `
                         <td class="p-4 text-slate-500">${new Date(r.timestamp).toLocaleString()}</td>
-                        <td class="p-4 font-mono text-xs font-semibold">${r.node_id}</td>
+                        <td class="p-4 font-mono text-xs font-semibold">${nodeId}</td>
                         <td class="p-4">${parseFloat(r.temperature).toFixed(1)}</td>
                         <td class="p-4">${parseFloat(r.humidity).toFixed(1)}</td>
                         <td class="p-4">${parseFloat(r.soil_moisture).toFixed(1)}</td>
-                        <td class="p-4 font-medium">${r.crop_queried}</td>
+                        <td class="p-4 font-medium">${cropName}</td>
                         <td class="p-4">
                             <span class="px-2 py-0.5 rounded text-xs font-bold uppercase ${
-                                r.suitability_verdict === 'Optimal' ? 'bg-emerald-100 text-emerald-800' :
-                                r.suitability_verdict === 'Marginal' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'
-                            }">${r.suitability_verdict}</span>
+                                verdict === 'Optimal' ? 'bg-emerald-100 text-emerald-800' :
+                                verdict === 'Marginal' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'
+                            }">${verdict}</span>
                         </td>
                     `;
                     tableBody.appendChild(tr);
                 });
-            } catch(e) {
-                tableBody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-red-500">Failed to connect to history endpoint.</td></tr>';
             }
+
+            renderHistory();
+            setInterval(renderHistory, 5000);
         });
     </script>
+    
 </body>
 </html>

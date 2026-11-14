@@ -1,31 +1,29 @@
 import requests
-from config import Config
+import logging
 
-def fetch_satellite_weather(latitude: float = Config.DEFAULT_LATITUDE,
-                            longitude: float = Config.DEFAULT_LONGITUDE) -> dict:
+logger = logging.getLogger(__name__)
+
+# Pune coordinates as default; adjust if needed
+LATITUDE = 18.5204
+LONGITUDE = 73.8567
+OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
+
+def get_live_weather():
     params = {
-        "latitude": latitude,
-        "longitude": longitude,
-        "current": ["temperature_2m", "relative_humidity_2m", "precipitation"],
+        "latitude": LATITUDE,
+        "longitude": LONGITUDE,
+        "current": ["temperature_2m", "relative_humidity_2m"],
         "timezone": "auto"
     }
     try:
-        response = requests.get(Config.OPEN_METEO_BASE_URL, params=params, timeout=5.0)
+        response = requests.get(OPEN_METEO_URL, params=params, timeout=5)
         response.raise_for_status()
         data = response.json()
         current = data.get("current", {})
         return {
-            "source": "Open-Meteo Satellite Fallback",
-            "temperature_c": current.get("temperature_2m", 25.0),
-            "humidity_pct": current.get("relative_humidity_2m", 60.0),
-            "precipitation_mm": current.get("precipitation", 0.0),
-            "status": "success"
+            "temperature": current.get("temperature_2m"),
+            "humidity": current.get("relative_humidity_2m")
         }
-    except requests.RequestException as e:
-        return {
-            "source": "Fallback Static Estimation",
-            "temperature_c": 26.5,
-            "humidity_pct": 65.0,
-            "precipitation_mm": 0.0,
-            "status": f"error: {str(e)}"
-        }
+    except Exception as e:
+        logger.error(f"Open-Meteo fetch failed: {e}")
+        return None

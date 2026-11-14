@@ -1,0 +1,57 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: agricloud_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - 5432:5432
+    networks:
+     - agricloud-network
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: agricloud_backend
+    restart: unless-stopped
+    environment:
+      - FLASK_ENV=production
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=${POSTGRES_DB:-agricloud}
+      - DB_USER=${POSTGRES_USER:-agriuser}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-agripassword}
+      - SQLITE_PATH=/app/agricloud.db
+    networks:
+      - agricloud-network
+    ports:
+      - 5000:5000
+    depends_on:
+      - db
+
+  frontend:
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    networks:
+        - agricloud-network
+    ports:
+      - 8080:80
+    depends_on:
+      - backend
+
+networks:
+  agricloud-network:  
+    driver: bridge
+
+volumes:
+  pgdata:
+    driver: local
