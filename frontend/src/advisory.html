@@ -47,34 +47,85 @@
     <script>
         document.getElementById("evaluate-btn").addEventListener("click", async () => {
             const crop = document.getElementById("crop-select").value;
-            try {
-                const res = await fetch("http://127.0.0.1:5000/api/telemetry", {
-                    method: "POST",
-                    headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({ temperature: 24.0, humidity: 60.0, soil_moisture: 55.0, crop: crop })
-                });
-                const data = await res.json();
-                document.getElementById("result-box").classList.remove("hidden");
-                document.getElementById("res-crop").innerText = data.crop;
-                document.getElementById("res-advisory").innerText = data.advisory;
-                const badge = document.getElementById("res-badge");
-                badge.innerText = data.verdict;
-                badge.className = "px-3 py-1 rounded-full text-xs font-bold uppercase " +
-                    (data.verdict === "Optimal" ? "bg-emerald-100 text-emerald-800" :
-                     data.verdict === "Marginal" ? "bg-amber-100 text-amber-800" : "bg-red-100 text-red-800");
 
-                const violList = document.getElementById("res-violations");
-                violList.innerHTML = "";
-                if (data.violations && data.violations.length > 0) {
-                    data.violations.forEach(v => {
-                        const li = document.createElement("li");
-                        li.innerText = "• " + v;
-                        violList.appendChild(li);
-                    });
+            let temp = Number(localStorage.getItem("agricloud_temp"));
+            let hum = Number(localStorage.getItem("agricloud_hum"));
+            let soil = Number(localStorage.getItem("agricloud_soil")) || 54.0;
+
+            if (!temp || !hum) {
+                try {
+                    const liveRes = await fetch("http://127.0.0.1:5000/api/telemetry/live", { cache: "no-store" });
+                    const liveData = await liveRes.json();
+                    temp = Number(liveData.temperature);
+                    hum = Number(liveData.humidity);
+                } catch (_) {
+                    temp = 24.5;
+                    hum = 60.0;
                 }
-            } catch(e) {
-                console.error(e);
             }
+
+            const rules = {
+                Wheat:    { minSoil: 45, maxSoil: 65, minTemp: 12, maxTemp: 32, minHum: 35, maxHum: 80 },
+                Cotton:   { minSoil: 40, maxSoil: 60, minTemp: 18, maxTemp: 38, minHum: 40, maxHum: 75 },
+                Soybeans: { minSoil: 50, maxSoil: 70, minTemp: 15, maxTemp: 34, minHum: 45, maxHum: 85 }
+            };
+            const r = rules[crop] || rules.Wheat;
+            const violations = [];
+
+            if (soil < r.minSoil) violations.push(`Soil moisture (${soil.toFixed(1)}%) below optimal minimum (${r.minSoil}%).`);
+            if (soil > r.maxSoil) violations.push(`Soil moisture (${soil.toFixed(1)}%) exceeds saturation limit (${r.maxSoil}%).`);
+            if (temp < r.minTemp || temp > r.maxTemp) violations.push(`Ambient temperature (${temp.toFixed(1)}°C) outside nominal range (${r.minTemp}°C–${r.maxTemp}°C).`);
+            if (hum < r.minHum || hum > r.maxHum) violations.push(`Relative humidity (${hum.toFixed(1)}%) outside optimal band (${r.minHum}%–${r.maxHum}%).`);
+
+            let verdict = "Optimal";
+            let advisory = `Optimal — Current field microclimate (${temp.toFixed(1)}°C, ${hum.toFixed(1)}% RH, ${soil.toFixed(1)}% soil moisture) supports healthy ${crop} cultivation.`;
+
+            if (soil < r.minSoil) {
+                verdict = "Critical";
+                advisory = `Critical — Immediate irrigation required for ${crop}. Soil moisture has dropped below critical root-zone threshold.`;
+            } else if (violations.length > 0) {
+                verdict = "Marginal";
+                advisory = `Marginal — ${crop} is viable with active monitoring, but one or more microclimate parameters sit outside ideal bounds.`;
+            }
+
+            try {
+                await fetch("http://127.0.0.1:5000/api/telemetry", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ temperature: temp, humidity: hum, soil_moisture: soil, crop: crop })
+                });
+            } catch (_) {}
+
+            const history = JSON.parse(localStorage.getItem("agricloud_history") || "[]");
+            history.unshift({
+                id: Date.now().toString().slice(-4),
+                timestamp: new Date().toISOString(),
+                node_id: "ESP32-NODE-01",
+                temperature: temp,
+                humidity: hum,
+                soil_moisture: soil,
+                crop: crop,
+                verdict: verdict
+            });
+            localStorage.setItem("agricloud_history", JSON.stringify(history.slice(0, 30)));
+
+            document.getElementById("result-box").classList.remove("hidden");
+            document.getElementById("res-crop").innerText = crop;
+            document.getElementById("res-advisory").innerText = advisory;
+
+            const badge = document.getElementById("res-badge");
+            badge.innerText = verdict;
+            badge.className = "px-3 py-1 rounded-full text-xs font-bold uppercase " +
+                (verdict === "Optimal" ? "bg-emerald-100 text-emerald-800" :
+                 verdict === "Marginal" ? "bg-amber-100 text-amber-800" : "bg-red-100 text-red-800");
+
+            const violList = document.getElementById("res-violations");
+            violList.innerHTML = "";
+            violations.forEach(v => {
+                const li = document.createElement("li");
+                li.innerText = "• " + v;
+                violList.appendChild(li);
+            });
         });
     </script>
 </body>
